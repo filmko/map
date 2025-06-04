@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开放式消防设施管理系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #3498db;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #c0392b;
+            --gray-color: #95a5a6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), #c0392b);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.9);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .app-container {
+            display: flex;
+            gap: 20px;
+            min-height: 75vh;
+        }
+
+        .control-panel, .info-panel {
+            flex: 0 0 280px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+
+        .main-content {
+            flex: 1;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .panel-section {
+            margin-bottom: 15px;
+        }
+
+        .panel-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--light-color);
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--gray-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #f8f9fa;
+            margin-bottom: 12px;
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(231, 76, 60, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 2.5rem;
+            color: var(--gray-color);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .upload-area p {
+            color: var(--gray-color);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        #imageUpload {
+            display: none;
+        }
+
+        .image-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .image-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            position: relative;
+        }
+
+        .image-item:hover {
+            background-color: #f8f9fa;
+            border-color: var(--secondary-color);
+        }
+
+        .image-item.active {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-color: var(--secondary-color);
+        }
+
+        .image-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+
+        .image-name {
+            flex: 1;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .image-size {
+            font-size: 0.7rem;
+            color: var(--gray-color);
+            position: absolute;
+            bottom: 5px;
+            right: 8px;
+        }
+
+        .tools {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .tool-btn {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+        }
+
+        .tool-btn:hover {
+            background-color: #f8f9fa;
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        .tool-btn.active {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+
+        .filters {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filters label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .filters label:hover {
+            background-color: #f8f9fa;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #floorCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #noImageMessage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--gray-color);
+            z-index: 5;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #noImageMessage i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        #noImageMessage p {
+            max-width: 300px;
+        }
+
+        .facility-info {
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .facility-info .placeholder {
+            color: var(--gray-color);
+            font-style: italic;
+        }
+
+        .facility-details {
+            width: 100%;
+        }
+
+        .facility-details h3 {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1rem;
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .detail-label {
+            flex: 0 0 70px;
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+
+        .detail-value {
+            flex: 1;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-normal {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #27ae60;
+        }
+
+        .status-maintenance {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: #d35400;
+        }
+
+        .status-faulty {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #c0392b;
+        }
+
+        .status-replaced {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: #2980b9;
+        }
+
+        .facility-form {
+            padding-top: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn.primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend > div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .fire-hydrant {
+            background-color: #3498db;
+        }
+
+        .exit {
+            background-color: #2ecc71;
+        }
+
+        .extinguisher {
+            background-color: #e74c3c;
+        }
+
+        .alarm {
+            background-color: #f39c12;
+        }
+
+        .path {
+            background-color: #9b59b6;
+        }
+        
+        .display {
+            background-color: #1abc9c;
+        }
+        
+        .guide-box {
+            background-color: #d35400;
+        }
+        
+        .valve {
+            background-color: #8e44ad;
+        }
+        
+        .test-facility {
+            background-color: #16a085;
+        }
+
+        .status-legend {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-normal {
+            background-color: #2ecc71;
+        }
+
+        .status-maintenance {
+            background-color: #f39c12;
+        }
+
+        .status-faulty {
+            background-color: #e74c3c;
+        }
+
+        .status-replaced {
+            background-color: #3498db;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .upload-feedback {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .upload-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #27ae60;
+            display: block;
+        }
+
+        .upload-error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #c0392b;
+            display: block;
+        }
+        
+        .data-panel {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .data-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .data-btn {
+            width: 100%;
+            text-align: center;
+        }
+
+        .history-panel {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-time {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .history-action {
+            margin-left: 8px;
+        }
+
+        .user-count {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-box {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            width: 350px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--dark-color);
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .login-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        .login-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .switch-mode {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .switch-mode a {
+            color: var(--secondary-color);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .control-panel, .info-panel {
+                flex: 0 0 auto;
+                width: 100%;
+                max-height: none;
+            }
+            
+            .tools {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .tools {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .app-container {
+                gap: 15px;
+            }
+            
+            .panel-section {
+                margin-bottom: 15px;
+            }
+            
+            .upload-area {
+                padding: 15px;
+            }
+            
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tools {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .filters {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .legend, .status-legend {
+                grid-template-columns: 1fr;
+            }
+            
+            header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .panel-section h2 {
+                font-size: 1.1rem;
+            }
+            
+            .form-buttons {
+                flex-direction: column;
+            }
+            
+            .login-box {
+                width: 90%;
+                padding: 20px;
+            }
+        }
+        
+        .welcome-note {
+            background-color: #e3f2fd;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .storage-info {
+            background-color: #e8f5e9;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+        
+        .storage-bar {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .storage-used {
+            height: 100%;
+            background-color: var(--success-color);
+            border-radius: 5px;
+        }
+        
+        .import-area {
+            border: 2px dashed var(--gray-color);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 10px;
+            background-color: #f8f9fa;
+        }
+        
+        .online-users {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .online-user {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+        }
+        
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-name" id="userName">未登录</div>
+            </div>
+            <h1><i class="fas fa-fire-extinguisher"></i> 开放式消防设施管理系统</h1>
+            <p>任何人都可以查看和修改平面图及消防设施标注 - 服务器存储</p>
+        </header>
+
+        <div class="app-container">
+            <!-- 左侧控制面板 -->
+            <div class="control-panel">
+                <div class="welcome-note">
+                    <p><i class="fas fa-info-circle"></i> 这是一个开放式系统，所有数据存储在服务器中。任何人都可以查看和修改。</p>
+                    <p><i class="fas fa-users"></i> <span id="onlineCount">0</span> 位用户在线</p>
+                </div>
+                
+                <div class="panel-section">
+                    <h2><i class="fas fa-upload"></i> 平面图管理</h2>
+                    <div class="upload-area" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>点击或拖放图片上传平面图</p>
+                        <p class="upload-tip">(支持JPG, PNG格式)</p>
+                        <input type="file" id="imageUpload" accept="image/jpeg,image/png" multiple>
+                    </div>
+                    <div id="uploadFeedback" class="upload-feedback"></div>
+                    <div id="imageList" class="image-list"></div>
+                </div>
+
+                <div class="panel-section">
+                    <h2><i class="fas fa-tools"></i> 工具</h2>
+                    <div class="tools">
+                        <button id="fireHydrantBtn" class="tool-btn active">
+                            <i class="fas fa-faucet"></i> 消火栓
+                        </button>
+                        <button id="exitBtn" class="tool-btn">
+                            <i class="fas fa-door-open"></i> 安全出口
+                        </button>
+                        <button id="extinguisherBtn" class="tool-btn">
+                            <i class="fas fa-fire-extinguisher"></i> 灭火器
+                        </button>
+                        <button id="alarmBtn" class="tool-btn">
+                            <i class="fas fa-bell"></i> 报警器
+                        </button>
+                        <button id="pathBtn" class="tool-btn">
+                            <i class="fas fa-route"></i> 疏散通道
+                        </button>
+                        <button id="displayBtn" class="tool-btn">
+                            <i class="fas fa-tv"></i> 火灾显示盘
+                        </button>
+                        <button id="guideBoxBtn" class="tool-btn">
+                            <i class="fas fa-box"></i> 疏散引导箱
+                        </button>
+                        <button id="valveBtn" class="tool-btn">
+                            <i class="fas fa-faucet"></i> 信号蝶阀
+                        </button>
+                        <button id="testFacilityBtn" class="tool-btn">
+                            <i class="fas fa-tint"></i> 末端试水
+                        </button>
+                        <button id="deleteBtn" class="tool-btn">
+                            <i class="fas fa-trash-alt"></i> 删除
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2><i class="fas fa-filter"></i> 分类查看</h2>
+                    <div class="filters">
+                        <label>
+                            <input type="checkbox" name="filter" value="fireHydrant" checked>
+                            <i class="fas fa-faucet"></i> 消火栓
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="exit" checked>
+                            <i class="fas fa-door-open"></i> 安全出口
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="extinguisher" checked>
+                            <i class="fas fa-fire-extinguisher"></i> 灭火器
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="alarm" checked>
+                            <i class="fas fa-bell"></i> 报警器
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="path" checked>
+                            <i class="fas fa-route"></i> 疏散通道
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="display" checked>
+                            <i class="fas fa-tv"></i> 火灾显示盘
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="guideBox" checked>
+                            <i class="fas fa-box"></i> 疏散引导箱
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="valve" checked>
+                            <i class="fas fa-faucet"></i> 信号蝶阀
+                        </label>
+                        <label>
+                            <input type="checkbox" name="filter" value="testFacility" checked>
+                            <i class="fas fa-tint"></i> 末端试水
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主画布区域 -->
+            <div class="main-content">
+                <div class="canvas-container">
+                    <canvas id="floorCanvas"></canvas>
+                    <div id="noImageMessage">
+                        <i class="fas fa-image"></i>
+                        <h3>欢迎使用开放式消防设施管理系统</h3>
+                        <p>任何人都可以上传平面图并标注消防设施位置</p>
+                        <p>支持JPG、PNG格式的图片文件</p>
+                        <button id="startUploadBtn" class="btn primary" style="margin-top: 20px;">
+                            <i class="fas fa-upload"></i> 上传平面图
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧信息面板 -->
+            <div class="info-panel">
+                <div class="panel-section">
+                    <h2><i class="fas fa-info-circle"></i> 设施信息</h2>
+                    <div id="facilityInfo" class="facility-info">
+                        <p class="placeholder">选择一个设施查看详细信息</p>
+                    </div>
+                    <div id="facilityForm" class="facility-form hidden">
+                        <h3>编辑设施信息</h3>
+                        <div class="form-group">
+                            <label for="facilityType">类型:</label>
+                            <select id="facilityType">
+                                <option value="fireHydrant">消火栓</option>
+                                <option value="exit">安全出口</option>
+                                <option value="extinguisher">灭火器</option>
+                                <option value="alarm">报警器</option>
+                                <option value="path">疏散通道</option>
+                                <option value="display">火灾显示盘</option>
+                                <option value="guideBox">疏散引导箱</option>
+                                <option value="valve">信号蝶阀</option>
+                                <option value="testFacility">末端试水设施</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="facilityStatus">状态:</label>
+                            <select id="facilityStatus">
+                                <option value="normal">正常</option>
+                                <option value="maintenance">维护中</option>
+                                <option value="faulty">故障</option>
+                                <option value="replaced">已更换</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="facilityNotes">备注:</label>
+                            <textarea id="facilityNotes" rows="3" placeholder="添加设施备注信息..."></textarea>
+                        </div>
+                        <div class="form-buttons">
+                            <button id="saveFacilityBtn" class="btn primary">保存</button>
+                            <button id="cancelEditBtn" class="btn">取消</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <h2><i class="fas fa-map-marker-alt"></i> 图例</h2>
+                    <div class="legend">
+                        <div><span class="legend-icon fire-hydrant"></span> 消火栓</div>
+                        <div><span class="legend-icon exit"></span> 安全出口</div>
+                        <div><span class="legend-icon extinguisher"></span> 灭火器</div>
+                        <div><span class="legend-icon alarm"></span> 报警器</div>
+                        <div><span class="legend-icon path"></span> 疏散通道</div>
+                        <div><span class="legend-icon display"></span> 火灾显示盘</div>
+                        <div><span class="legend-icon guide-box"></span> 疏散引导箱</div>
+                        <div><span class="legend-icon valve"></span> 信号蝶阀</div>
+                        <div><span class="legend-icon test-facility"></span> 末端试水设施</div>
+                        <div class="status-legend">
+                            <div><span class="status-dot normal"></span> 正常</div>
+                            <div><span class="status-dot maintenance"></span> 维护中</div>
+                            <div><span class="status-dot faulty"></span> 故障</div>
+                            <div><span class="status-dot replaced"></span> 已更换</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <h2><i class="fas fa-users"></i> 在线用户</h2>
+                    <div class="online-users" id="onlineUsersList">
+                        <div class="online-user">
+                            <span class="online-dot"></span>
+                            <span>系统管理员</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <h2><i class="fas fa-history"></i> 操作历史</h2>
+                    <div class="history-panel" id="historyList">
+                        <div class="history-item">
+                            <span class="history-time">刚刚</span>
+                            <span class="history-action">系统已初始化</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h2>消防设施管理系统</h2>
+            <div class="login-form">
+                <div class="form-group">
+                    <input type="email" id="loginEmail" placeholder="电子邮箱">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" placeholder="密码">
+                </div>
+                <button id="loginBtn" class="login-btn">登录</button>
+                <div class="switch-mode">
+                    没有账号? <a id="switchToRegister">注册新账号</a>
+                </div>
+                <div class="switch-mode hidden" id="registerMode">
+                    已有账号? <a id="switchToLogin">返回登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4R6MK7m6bI2X7Yc7v2q6ZJ7w7a7d7k7c",
+            authDomain: "fire-safety-system.firebaseapp.com",
+            databaseURL: "https://fire-safety-system.firebaseio.com",
+            projectId: "fire-safety-system",
+            storageBucket: "fire-safety-system.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abc123def456"
+        };
+
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // 应用状态管理
+        const appState = {
+            currentImage: null,
+            currentFacilityType: 'fireHydrant',
+            currentFacility: null,
+            images: [],
+            facilities: [],
+            editMode: false,
+            history: [],
+            currentUser: null,
+            onlineUsers: {}
+        };
+
+        // DOM元素
+        const elements = {
+            canvas: document.getElementById('floorCanvas'),
+            ctx: document.getElementById('floorCanvas').getContext('2d'),
+            uploadInput: document.getElementById('imageUpload'),
+            dropZone: document.getElementById('dropZone'),
+            imageList: document.getElementById('imageList'),
+            noImageMessage: document.getElementById('noImageMessage'),
+            toolButtons: document.querySelectorAll('.tool-btn'),
+            filterCheckboxes: document.querySelectorAll('input[name="filter"]'),
+            facilityInfo: document.getElementById('facilityInfo'),
+            facilityForm: document.getElementById('facilityForm'),
+            saveFacilityBtn: document.getElementById('saveFacilityBtn'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
+            facilityType: document.getElementById('facilityType'),
+            facilityStatus: document.getElementById('facilityStatus'),
+            facilityNotes: document.getElementById('facilityNotes'),
+            uploadFeedback: document.getElementById('uploadFeedback'),
+            startUploadBtn: document.getElementById('startUploadBtn'),
+            historyList: document.getElementById('historyList'),
+            onlineCount: document.getElementById('onlineCount'),
+            onlineUsersList: document.getElementById('onlineUsersList'),
+            loginContainer: document.getElementById('loginContainer'),
+            loginEmail: document.getElementById('loginEmail'),
+            loginPassword: document.getElementById('loginPassword'),
+            loginBtn: document.getElementById('loginBtn'),
+            switchToRegister: document.getElementById('switchToRegister'),
+            switchToLogin: document.getElementById('switchToLogin'),
+            registerMode: document.getElementById('registerMode'),
+            userAvatar: document.getElementById('userAvatar'),
+            userName: document.getElementById('userName')
+        };
+
+        // 初始化应用
+        function initApp() {
+            // 设置事件监听器
+            setupEventListeners();
+            
+            // 监听认证状态变化
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // 用户已登录
+                    appState.currentUser = user;
+                    elements.loginContainer.classList.add('hidden');
+                    
+                    // 显示用户信息
+                    const name = user.email.split('@')[0];
+                    elements.userName.textContent = name;
+                    elements.userAvatar.textContent = name.charAt(0).toUpperCase();
+                    
+                    // 加载数据
+                    loadData();
+                    
+                    // 设置在线状态
+                    setUserOnlineStatus();
+                    
+                    // 监听在线用户
+                    listenToOnlineUsers();
+                    
+                    // 添加初始历史记录
+                    addHistory('用户登录');
+                } else {
+                    // 用户未登录
+                    appState.currentUser = null;
+                    elements.loginContainer.classList.remove('hidden');
+                }
+            });
+        }
+
+        // 设置用户在线状态
+        function setUserOnlineStatus() {
+            if (!appState.currentUser) return;
+            
+            const userRef = database.ref('onlineUsers/' + appState.currentUser.uid);
+            
+            // 设置当前用户为在线
+            userRef.set({
+                name: appState.currentUser.email.split('@')[0],
+                email: appState.currentUser.email,
+                lastActive: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            // 当用户断开连接时更新状态
+            userRef.onDisconnect().remove();
+        }
+
+        // 监听在线用户
+        function listenToOnlineUsers() {
+            const onlineUsersRef = database.ref('onlineUsers');
+            
+            onlineUsersRef.on('value', snapshot => {
+                appState.onlineUsers = snapshot.val() || {};
+                renderOnlineUsers();
+            });
+        }
+
+        // 渲染在线用户
+        function renderOnlineUsers() {
+            elements.onlineUsersList.innerHTML = '';
+            const users = Object.values(appState.onlineUsers);
+            elements.onlineCount.textContent = users.length;
+            
+            users.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'online-user';
+                userElement.innerHTML = `
+                    <span class="online-dot"></span>
+                    <span>${user.name}</span>
+                `;
+                elements.onlineUsersList.appendChild(userElement);
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 登录/注册
+            elements.loginBtn.addEventListener('click', loginUser);
+            elements.switchToRegister.addEventListener('click', () => {
+                elements.loginBtn.textContent = '注册';
+                elements.registerMode.classList.remove('hidden');
+            });
+            elements.switchToLogin.addEventListener('click', () => {
+                elements.loginBtn.textContent = '登录';
+                elements.registerMode.classList.add('hidden');
+            });
+            
+            // 图片上传
+            elements.uploadInput.addEventListener('change', handleImageUpload);
+            elements.dropZone.addEventListener('click', () => elements.uploadInput.click());
+            elements.startUploadBtn.addEventListener('click', () => elements.uploadInput.click());
+            
+            // 拖放功能
+            elements.dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.add('drag-over');
+            });
+            
+            elements.dropZone.addEventListener('dragleave', () => {
+                elements.dropZone.classList.remove('drag-over');
+            });
+            
+            elements.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) {
+                    elements.uploadInput.files = e.dataTransfer.files;
+                    handleImageUpload();
+                }
+            });
+            
+            // 工具按钮
+            elements.toolButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 设置活动按钮
+                    elements.toolButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // 设置当前设施类型
+                    if (btn.id === 'fireHydrantBtn') {
+                        appState.currentFacilityType = 'fireHydrant';
+                    } else if (btn.id === 'exitBtn') {
+                        appState.currentFacilityType = 'exit';
+                    } else if (btn.id === 'extinguisherBtn') {
+                        appState.currentFacilityType = 'extinguisher';
+                    } else if (btn.id === 'alarmBtn') {
+                        appState.currentFacilityType = 'alarm';
+                    } else if (btn.id === 'pathBtn') {
+                        appState.currentFacilityType = 'path';
+                    } else if (btn.id === 'displayBtn') {
+                        appState.currentFacilityType = 'display';
+                    } else if (btn.id === 'guideBoxBtn') {
+                        appState.currentFacilityType = 'guideBox';
+                    } else if (btn.id === 'valveBtn') {
+                        appState.currentFacilityType = 'valve';
+                    } else if (btn.id === 'testFacilityBtn') {
+                        appState.currentFacilityType = 'testFacility';
+                    } else if (btn.id === 'deleteBtn') {
+                        appState.currentFacilityType = 'delete';
+                    }
+                    
+                    addHistory(`选择工具: ${btn.querySelector('i').nextSibling.textContent.trim()}`);
+                });
+            });
+            
+            // 筛选器
+            elements.filterCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    render();
+                    addHistory(`更新筛选器`);
+                });
+            });
+            
+            // 画布点击事件
+            elements.canvas.addEventListener('click', handleCanvasClick);
+            
+            // 保存设施信息
+            elements.saveFacilityBtn.addEventListener('click', saveFacilityInfo);
+            elements.cancelEditBtn.addEventListener('click', cancelEdit);
+        }
+
+        // 用户登录
+        function loginUser() {
+            const email = elements.loginEmail.value;
+            const password = elements.loginPassword.value;
+            
+            if (!email || !password) {
+                showMessage('请输入邮箱和密码', 'error');
+                return;
+            }
+            
+            if (elements.loginBtn.textContent === '注册') {
+                // 注册新用户
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then(() => {
+                        showMessage('注册成功！', 'success');
+                    })
+                    .catch(error => {
+                        showMessage('注册失败: ' + error.message, 'error');
+                    });
+            } else {
+                // 登录
+                auth.signInWithEmailAndPassword(email, password)
+                    .catch(error => {
+                        showMessage('登录失败: ' + error.message, 'error');
+                    });
+            }
+        }
+
+        // 处理图片上传
+        function handleImageUpload() {
+            elements.uploadFeedback.textContent = '';
+            elements.uploadFeedback.className = 'upload-feedback';
+            
+            const files = elements.uploadInput.files;
+            if (!files.length) return;
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.type.match('image.*')) {
+                    errorCount++;
+                    continue;
+                }
+                
+                try {
+                    // 创建图像对象
+                    const imageObj = {
+                        id: Date.now() + i,
+                        name: file.name,
+                        timestamp: Date.now(),
+                        uploadedBy: appState.currentUser.email
+                    };
+                    
+                    // 创建临时URL
+                    const url = URL.createObjectURL(file);
+                    
+                    const img = new Image();
+                    img.onload = () => {
+                        imageObj.width = img.width;
+                        imageObj.height = img.height;
+                        
+                        // 添加到状态
+                        appState.images.push(imageObj);
+                        
+                        // 设置为当前图像
+                        appState.currentImage = imageObj;
+                        
+                        // 调整画布大小
+                        resizeCanvas();
+                        
+                        // 保存到数据库
+                        saveToDB('images', imageObj);
+                        
+                        // 渲染
+                        render();
+                        
+                        successCount++;
+                        showUploadFeedback(successCount, errorCount);
+                        
+                        addHistory(`上传图片: ${file.name}`);
+                        
+                        // 释放临时URL
+                        URL.revokeObjectURL(url);
+                    };
+                    img.src = url;
+                } catch (error) {
+                    console.error('图片加载失败:', error);
+                    errorCount++;
+                    showUploadFeedback(successCount, errorCount);
+                }
+            }
+            
+            // 重置上传输入
+            elements.uploadInput.value = '';
+        }
+
+        // 显示上传反馈
+        function showUploadFeedback(success, error) {
+            if (success === 0 && error === 0) return;
+            
+            let message = '';
+            if (success > 0) {
+                message += `成功上传 ${success} 张图片`;
+            }
+            if (error > 0) {
+                if (message) message += ', ';
+                message += `${error} 张图片上传失败`;
+            }
+            
+            elements.uploadFeedback.textContent = message;
+            elements.uploadFeedback.className = error > 0 ? 
+                'upload-feedback upload-error' : 'upload-feedback upload-success';
+        }
+
+        // 调整画布大小
+        function resizeCanvas() {
+            if (!appState.currentImage) return;
+            
+            const container = elements.canvas.parentElement;
+            const maxWidth = container.clientWidth - 40;
+            const maxHeight = container.clientHeight - 40;
+            
+            let width = appState.currentImage.width;
+            let height = appState.currentImage.height;
+            
+            // 按比例缩放
+            if (width > maxWidth) {
+                const ratio = maxWidth / width;
+                width = maxWidth;
+                height = height * ratio;
+            }
+            
+            if (height > maxHeight) {
+                const ratio = maxHeight / height;
+                height = maxHeight;
+                width = width * ratio;
+            }
+            
+            elements.canvas.width = width;
+            elements.canvas.height = height;
+            elements.canvas.style.width = `${width}px`;
+            elements.canvas.style.height = `${height}px`;
+        }
+
+        // 处理画布点击
+        function handleCanvasClick(e) {
+            if (!appState.currentImage) return;
+            
+            const rect = elements.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 检查是否点击了现有设施
+            for (let i = appState.facilities.length - 1; i >= 0; i--) {
+                const facility = appState.facilities[i];
+                if (facility.imageId !== appState.currentImage.id) continue;
+                
+                const dx = facility.x * elements.canvas.width - x;
+                const dy = facility.y * elements.canvas.height - y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance <= 15) { // 点击半径
+                    if (appState.currentFacilityType === 'delete') {
+                        // 删除设施
+                        const facilityName = getFacilityTypeName(facility.type);
+                        appState.facilities.splice(i, 1);
+                        
+                        // 从数据库删除
+                        deleteFromDB('facilities', facility.id);
+                        
+                        render();
+                        addHistory(`删除设施: ${facilityName}`);
+                        return;
+                    }
+                    
+                    // 选择设施
+                    appState.currentFacility = facility;
+                    showFacilityInfo(facility);
+                    render();
+                    return;
+                }
+            }
+            
+            // 添加新设施
+            if (appState.currentFacilityType !== 'delete') {
+                const newFacility = {
+                    id: Date.now(),
+                    imageId: appState.currentImage.id,
+                    type: appState.currentFacilityType,
+                    x: x / elements.canvas.width,
+                    y: y / elements.canvas.height,
+                    status: 'normal',
+                    notes: '',
+                    createdBy: appState.currentUser.email,
+                    createdAt: Date.now()
+                };
+                
+                appState.facilities.push(newFacility);
+                appState.currentFacility = newFacility;
+                
+                // 保存到数据库
+                saveToDB('facilities', newFacility);
+                
+                showFacilityInfo(newFacility);
+                render();
+                
+                const facilityName = getFacilityTypeName(appState.currentFacilityType);
+                addHistory(`添加设施: ${facilityName}`);
+            }
+        }
+
+        // 显示设施信息
+        function showFacilityInfo(facility) {
+            appState.editMode = false;
+            
+            // 显示详情
+            elements.facilityInfo.innerHTML = `
+                <div class="facility-details">
+                    <h3>设施详情</h3>
+                    <div class="detail-row">
+                        <div class="detail-label">类型:</div>
+                        <div class="detail-value">${getFacilityTypeName(facility.type)}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">状态:</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-${facility.status}">
+                                ${getStatusName(facility.status)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">备注:</div>
+                        <div class="detail-value">${facility.notes || '无备注信息'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">创建人:</div>
+                        <div class="detail-value">${facility.createdBy || '未知'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <button id="editFacilityBtn" class="btn primary">编辑信息</button>
+                    </div>
+                </div>
+            `;
+            
+            // 添加编辑按钮事件
+            document.getElementById('editFacilityBtn').addEventListener('click', () => {
+                appState.editMode = true;
+                elements.facilityForm.classList.remove('hidden');
+                
+                // 填充表单
+                elements.facilityType.value = facility.type;
+                elements.facilityStatus.value = facility.status;
+                elements.facilityNotes.value = facility.notes;
+            });
+        }
+
+        // 保存设施信息
+        function saveFacilityInfo() {
+            if (!appState.currentFacility) return;
+            
+            const oldType = appState.currentFacility.type;
+            const oldStatus = appState.currentFacility.status;
+            
+            appState.currentFacility.type = elements.facilityType.value;
+            appState.currentFacility.status = elements.facilityStatus.value;
+            appState.currentFacility.notes = elements.facilityNotes.value;
+            appState.currentFacility.updatedBy = appState.currentUser.email;
+            appState.currentFacility.updatedAt = Date.now();
+            
+            // 更新数据库
+            saveToDB('facilities', appState.currentFacility);
+            
+            render();
+            cancelEdit();
+            
+            // 添加历史记录
+            const changes = [];
+            if (oldType !== appState.currentFacility.type) {
+                changes.push(`类型: ${getFacilityTypeName(oldType)} → ${getFacilityTypeName(appState.currentFacility.type)}`);
+            }
+            if (oldStatus !== appState.currentFacility.status) {
+                changes.push(`状态: ${getStatusName(oldStatus)} → ${getStatusName(appState.currentFacility.status)}`);
+            }
+            
+            if (changes.length > 0) {
+                addHistory(`更新设施: ${changes.join(', ')}`);
+            }
+        }
+
+        // 取消编辑
+        function cancelEdit() {
+            appState.editMode = false;
+            elements.facilityForm.classList.add('hidden');
+            if (appState.currentFacility) {
+                showFacilityInfo(appState.currentFacility);
+            } else {
+                elements.facilityInfo.innerHTML = '<p class="placeholder">选择一个设施查看详细信息</p>';
+            }
+        }
+
+        // 渲染应用
+        function render() {
+            renderImageList();
+            renderCanvas();
+            
+            // 显示/隐藏无图像消息
+            elements.noImageMessage.style.display = appState.currentImage ? 'none' : 'flex';
+        }
+
+        // 渲染图片列表
+        function renderImageList() {
+            elements.imageList.innerHTML = '';
+            
+            appState.images.forEach(image => {
+                const isActive = appState.currentImage && appState.currentImage.id === image.id;
+                
+                const item = document.createElement('div');
+                item.className = `image-item ${isActive ? 'active' : ''}`;
+                
+                // 创建缩略图
+                item.innerHTML = `
+                    <i class="fas fa-image" style="font-size: 24px; margin-right: 8px;"></i>
+                    <div class="image-name">${image.name}</div>
+                    <div class="image-size">${formatFileSize(0)}</div>
+                `;
+                
+                item.addEventListener('click', () => {
+                    appState.currentImage = image;
+                    resizeCanvas();
+                    render();
+                    addHistory(`选择平面图: ${image.name}`);
+                });
+                
+                elements.imageList.appendChild(item);
+            });
+        }
+
+        // 渲染画布
+        function renderCanvas() {
+            if (!appState.currentImage) return;
+            
+            try {
+                // 清除画布
+                elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+                
+                // 绘制背景网格
+                drawGrid();
+                
+                // 绘制设施
+                const visibleTypes = getVisibleFacilityTypes();
+                appState.facilities.forEach(facility => {
+                    if (facility.imageId === appState.currentImage.id && visibleTypes.includes(facility.type)) {
+                        drawFacility(facility);
+                    }
+                });
+            } catch (error) {
+                console.error('渲染画布失败:', error);
+                showMessage('渲染平面图时出错', 'error');
+            }
+        }
+
+        // 绘制网格
+        function drawGrid() {
+            const gridSize = 30;
+            const width = elements.canvas.width;
+            const height = elements.canvas.height;
+            
+            elements.ctx.beginPath();
+            elements.ctx.strokeStyle = '#f0f0f0';
+            elements.ctx.lineWidth = 1;
+            
+            // 垂直线
+            for (let x = 0; x <= width; x += gridSize) {
+                elements.ctx.moveTo(x, 0);
+                elements.ctx.lineTo(x, height);
+            }
+            
+            // 水平线
+            for (let y = 0; y <= height; y += gridSize) {
+                elements.ctx.moveTo(0, y);
+                elements.ctx.lineTo(width, y);
+            }
+            
+            elements.ctx.stroke();
+        }
+
+        // 绘制设施
+        function drawFacility(facility) {
+            const x = facility.x * elements.canvas.width;
+            const y = facility.y * elements.canvas.height;
+            
+            // 设置颜色
+            let color;
+            switch (facility.type) {
+                case 'fireHydrant': color = '#3498db'; break;
+                case 'exit': color = '#2ecc71'; break;
+                case 'extinguisher': color = '#e74c3c'; break;
+                case 'alarm': color = '#f39c12'; break;
+                case 'path': color = '#9b59b6'; break;
+                case 'display': color = '#1abc9c'; break;
+                case 'guideBox': color = '#d35400'; break;
+                case 'valve': color = '#8e44ad'; break;
+                case 'testFacility': color = '#16a085'; break;
+                default: color = '#95a5a6';
+            }
+            
+            // 绘制图标
+            elements.ctx.beginPath();
+            elements.ctx.arc(x, y, 12, 0, Math.PI * 2);
+            elements.ctx.fillStyle = color;
+            elements.ctx.fill();
+            
+            // 绘制状态边框
+            elements.ctx.beginPath();
+            elements.ctx.arc(x, y, 15, 0, Math.PI * 2);
+            elements.ctx.strokeStyle = getStatusColor(facility.status);
+            elements.ctx.lineWidth = 3;
+            elements.ctx.stroke();
+            
+            // 如果是当前选中的设施，高亮显示
+            if (appState.currentFacility && appState.currentFacility.id === facility.id) {
+                elements.ctx.beginPath();
+                elements.ctx.arc(x, y, 18, 0, Math.PI * 2);
+                elements.ctx.strokeStyle = '#3498db';
+                elements.ctx.lineWidth = 2;
+                elements.ctx.stroke();
+            }
+        }
+
+        // 获取可见设施类型
+        function getVisibleFacilityTypes() {
+            const visibleTypes = [];
+            elements.filterCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    visibleTypes.push(checkbox.value);
+                }
+            });
+            return visibleTypes;
+        }
+
+        // 获取设施类型名称
+        function getFacilityTypeName(type) {
+            switch (type) {
+                case 'fireHydrant': return '消火栓';
+                case 'exit': return '安全出口';
+                case 'extinguisher': return '灭火器';
+                case 'alarm': return '报警器';
+                case 'path': return '疏散通道';
+                case 'display': return '火灾显示盘';
+                case 'guideBox': return '疏散引导箱';
+                case 'valve': return '信号蝶阀';
+                case 'testFacility': return '末端试水设施';
+                default: return '未知设施';
+            }
+        }
+
+        // 获取状态名称
+        function getStatusName(status) {
+            switch (status) {
+                case 'normal': return '正常';
+                case 'maintenance': return '维护中';
+                case 'faulty': return '故障';
+                case 'replaced': return '已更换';
+                default: return '未知状态';
+            }
+        }
+
+        // 获取状态颜色
+        function getStatusColor(status) {
+            switch (status) {
+                case 'normal': return '#2ecc71';
+                case 'maintenance': return '#f39c12';
+                case 'faulty': return '#e74c3c';
+                case 'replaced': return '#3498db';
+                default: return '#95a5a6';
+            }
+        }
+
+        // 保存到数据库
+        function saveToDB(collection, data) {
+            database.ref(`${collection}/${data.id}`).set(data)
+                .catch(error => {
+                    console.error(`保存${collection}失败:`, error);
+                    showMessage('保存数据失败，请检查网络连接', 'error');
+                });
+        }
+
+        // 从数据库删除
+        function deleteFromDB(collection, id) {
+            database.ref(`${collection}/${id}`).remove()
+                .catch(error => {
+                    console.error(`删除${collection}失败:`, error);
+                    showMessage('删除数据失败，请检查网络连接', 'error');
+                });
+        }
+
+        // 加载数据
+        function loadData() {
+            // 加载图片
+            database.ref('images').on('value', snapshot => {
+                appState.images = [];
+                snapshot.forEach(childSnapshot => {
+                    appState.images.push(childSnapshot.val());
+                });
+                render();
+            });
+            
+            // 加载设施
+            database.ref('facilities').on('value', snapshot => {
+                appState.facilities = [];
+                snapshot.forEach(childSnapshot => {
+                    appState.facilities.push(childSnapshot.val());
+                });
+                render();
+            });
+            
+            // 加载历史
+            database.ref('history').limitToLast(10).on('value', snapshot => {
+                appState.history = [];
+                snapshot.forEach(childSnapshot => {
+                    appState.history.push(childSnapshot.val());
+                });
+                renderHistory();
+            });
+        }
+
+        // 添加操作历史
+        function addHistory(action) {
+            const now = new Date();
+            const historyItem = {
+                id: Date.now(),
+                action: action,
+                user: appState.currentUser.email,
+                timestamp: now.getTime(),
+                timeString: now.toLocaleTimeString()
+            };
+            
+            appState.history.unshift(historyItem);
+            
+            // 只保留最近的10条历史记录
+            if (appState.history.length > 10) {
+                appState.history.pop();
+            }
+            
+            // 更新历史列表显示
+            renderHistory();
+            
+            // 保存到数据库
+            saveToDB('history', historyItem);
+        }
+
+        // 渲染操作历史
+        function renderHistory() {
+            elements.historyList.innerHTML = '';
+            
+            appState.history.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'history-item';
+                itemElement.innerHTML = `
+                    <span class="history-time">${item.timeString}</span>
+                    <span class="history-action">${item.user}: ${item.action}</span>
+                `;
+                elements.historyList.appendChild(itemElement);
+            });
+        }
+        
+        // 显示消息
+        function showMessage(message, type) {
+            elements.uploadFeedback.textContent = message;
+            elements.uploadFeedback.className = type === 'error' ? 
+                'upload-feedback upload-error' : 'upload-feedback upload-success';
+            
+            // 3秒后隐藏反馈
+            setTimeout(() => {
+                elements.uploadFeedback.className = 'upload-feedback';
+            }, 3000);
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 初始化应用
+        window.addEventListener('load', initApp);
+        window.addEventListener('resize', () => {
+            if (appState.currentImage) {
+                resizeCanvas();
+                render();
+            }
+        });
+    </script>
+</body>
+</html>
